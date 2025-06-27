@@ -55,7 +55,6 @@ export default function Home() {
 
   useEffect(() => {
     const canvas = canvasRef.current;
-
     if (canvas) {
       canvas.style.background = 'black';
       const ctx = canvas.getContext('2d');
@@ -85,11 +84,9 @@ export default function Home() {
 
   useEffect(() => {
     if (!isRunning) return;
-
     const interval = setInterval(() => {
       setDots((prev) => (prev.length >= 3 ? '.' : prev + '.'));
     }, 500);
-
     return () => clearInterval(interval);
   }, [isRunning]);
 
@@ -116,27 +113,27 @@ export default function Home() {
     }
   };
 
-  const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  const startDrawing = (x: number, y: number) => {
     const canvas = canvasRef.current;
     if (canvas) {
       canvas.style.background = 'black';
       const ctx = canvas.getContext('2d');
       if (ctx) {
         ctx.beginPath();
-        ctx.moveTo(e.nativeEvent.offsetX, e.nativeEvent.offsetY);
+        ctx.moveTo(x, y);
         setIsDrawing(true);
       }
     }
   };
 
-  const draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  const drawLine = (x: number, y: number) => {
     if (!isDrawing) return;
     const canvas = canvasRef.current;
     if (canvas) {
       const ctx = canvas.getContext('2d');
       if (ctx) {
         ctx.strokeStyle = color;
-        ctx.lineTo(e.nativeEvent.offsetX, e.nativeEvent.offsetY);
+        ctx.lineTo(x, y);
         ctx.stroke();
       }
     }
@@ -171,10 +168,7 @@ export default function Home() {
 
       const ctx = canvas.getContext('2d');
       const imageData = ctx!.getImageData(0, 0, canvas.width, canvas.height);
-      let minX = canvas.width,
-        minY = canvas.height,
-        maxX = 0,
-        maxY = 0;
+      let minX = canvas.width, minY = canvas.height, maxX = 0, maxY = 0;
 
       for (let y = 0; y < canvas.height; y++) {
         for (let x = 0; x < canvas.width; x++) {
@@ -212,12 +206,7 @@ export default function Home() {
   return (
     <>
       <div className='grid grid-cols-3 gap-2'>
-        <Button
-          onClick={() => setReset(true)}
-          className='z-20 bg-black text-white'
-          variant='default'
-          color='black'
-        >
+        <Button onClick={() => setReset(true)} className='z-20 bg-black text-white'>
           Reset
         </Button>
         <Group className='z-20'>
@@ -225,36 +214,36 @@ export default function Home() {
             <ColorSwatch key={swatch} color={swatch} onClick={() => setColor(swatch)} />
           ))}
         </Group>
-        <Button
-          onClick={runRoute}
-          className='z-20 bg-black text-white'
-          variant='default'
-          color='white'
-          disabled={isRunning}
-        >
+        <Button onClick={runRoute} className='z-20 bg-black text-white' disabled={isRunning}>
           {isRunning ? `Running${dots}` : 'Run'}
         </Button>
       </div>
 
-      {/* Loader Overlay */}
       {isRunning && (
         <div className="absolute top-0 left-0 w-full h-full z-30 flex items-center justify-center bg-black bg-opacity-40">
           <Loader size="xl" color="white" />
         </div>
       )}
 
-      {/* Canvas */}
       <canvas
         ref={canvasRef}
-        id='canvas'
-        className='absolute top-0 left-0 w-full h-full'
-        onMouseDown={startDrawing}
-        onMouseMove={draw}
+        id="canvas"
+        className="absolute top-0 left-0 w-full h-full touch-none"
+        onMouseDown={(e) => startDrawing(e.nativeEvent.offsetX, e.nativeEvent.offsetY)}
+        onMouseMove={(e) => drawLine(e.nativeEvent.offsetX, e.nativeEvent.offsetY)}
         onMouseUp={stopDrawing}
         onMouseOut={stopDrawing}
+        onTouchStart={(e) => {
+          const touch = e.touches[0];
+          startDrawing(touch.clientX, touch.clientY);
+        }}
+        onTouchMove={(e) => {
+          const touch = e.touches[0];
+          drawLine(touch.clientX, touch.clientY);
+        }}
+        onTouchEnd={stopDrawing}
       />
 
-      {/* Rendered LaTeX */}
       {latexExpression && latexExpression.map((latex, index) => (
         <Draggable
           key={index}
